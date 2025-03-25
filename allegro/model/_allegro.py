@@ -83,6 +83,7 @@ def Allegro(config, initialize: bool, dataset: Optional[AtomicDataset] = None):
             ScalarMLP,
             dict(field=EDGE_FEATURES, out_field=EDGE_ENERGY, mlp_output_dimension=1),
         ),
+        "final": None,
         # Sum edgewise energies -> per-atom energies:
         "edge_eng_sum": EdgewiseEnergySum,
         # Sum system energy:
@@ -95,6 +96,18 @@ def Allegro(config, initialize: bool, dataset: Optional[AtomicDataset] = None):
             ),
         ),
     }
+
+    if config.get("include_final_mlp", True):
+        layers["edge_eng"] = (
+            ScalarMLP,
+            dict(field=EDGE_FEATURES, out_field=EDGE_ENERGY_REDUCED, mlp_output_dimension=16),
+        )
+        layers["final"] = (
+            ScalarMLP,
+            dict(field=EDGE_ENERGY_REDUCED, out_field=EDGE_ENERGY, mlp_output_dimension=1),
+        )
+    else:
+        del layers['final']
 
     model = SequentialGraphNetwork.from_parameters(shared_params=config, layers=layers)
 
